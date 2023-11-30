@@ -1,0 +1,59 @@
+nltk.download('stopwords')
+nltk.download('punkt')
+import nltk
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords
+from nltk.probability import FreqDist
+from nltk.classify import NaiveBayesClassifier
+from nltk.classify.util import accuracy
+
+# Step 1: Data Collection and Preprocessing
+# Example data
+texts = [
+    ("Hey, how are you doing today?", "normal"),
+    ("Get a free gift by signing up now!", "spam"),
+    ("The quick brown fox jumps over the lazy dog", "normal"),
+    ("Free money!!!", "spam"),
+    ("Check out our latest deals", "spam"),
+    ("How about a game of tennis tomorrow?", "normal")
+]
+
+# Step 2: Feature Extraction
+all_words = []
+documents = []
+stop_words = set(stopwords.words("english"))
+
+for text, label in texts:
+    words = word_tokenize(text.lower())  # Tokenize text and convert to lowercase
+    words = [word for word in words if word.isalpha() and word not in stop_words]  # Filter stopwords and non-alphabetic words
+    all_words.extend(words)
+    documents.append((words, label))
+
+# Step 3: Feature Selection
+all_words = FreqDist(all_words)  # Frequency distribution of all words
+word_features = list(all_words.keys())[:50]  # Select top 50 words as features
+
+# Step 4: Feature Extraction Function
+def extract_features(document):
+    words = set(document)
+    features = {}
+    for word in word_features:
+        features[word] = (word in words)
+    return features
+
+# Step 5: Prepare Training and Testing Sets
+featuresets = [(extract_features(words), label) for (words, label) in documents]
+train_set, test_set = featuresets[2:], featuresets[:2]  # Using a small dataset, adjust as needed
+
+# Step 6: Naive Bayes Model Training
+classifier = NaiveBayesClassifier.train(train_set)
+
+# Step 7: Model Evaluation
+print("Accuracy:", accuracy(classifier, test_set))
+
+# Step 8: Prediction (For new text data)
+new_text = "Get free money now!!!"
+words = word_tokenize(new_text.lower())
+words = [word for word in words if word.isalpha() and word not in stop_words]
+predicted_label = classifier.classify(extract_features(words))
+print("Predicted Label:", predicted_label)
